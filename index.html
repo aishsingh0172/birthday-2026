@@ -6,6 +6,10 @@
   <meta name="description" content="A little universe, made for Aishie." />
   <title>For Aishie · 02 June</title>
 
+  <!-- Heart favicon (inline SVG so no external file needed) -->
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>%F0%9F%92%96</text></svg>" />
+
   <!-- Fonts: elegant serif + romantic script + clean body -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,6 +82,13 @@
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      /* Gentle fade-in on load to avoid jarring first paint */
+      opacity: 0;
+      animation: page-fade-in 0.9s ease 0.05s forwards;
+    }
+    @keyframes page-fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
     /* Section container — every new section uses this as a base.
@@ -175,6 +186,75 @@
       padding-left: 0.55em; /* visually centers letter-spaced text */
       opacity: 0;
       animation: fade-up 1.4s ease 0.3s forwards;
+    }
+
+    /* Subtle "scroll" hint near the bottom of the hero. Functional too —
+       the cake's birthday message only reveals once the girl arrives on
+       scroll. The hint disappears the moment the page is scrolled. */
+    .hero-scroll-hint {
+      position: absolute;
+      bottom: clamp(18px, 4vh, 38px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      text-decoration: none;
+      color: rgba(232, 180, 160, 0.7);
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: clamp(0.68rem, 1.4vw, 0.82rem);
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      opacity: 0;
+      animation:
+        scroll-hint-appear 1.2s ease 2.6s forwards,
+        scroll-hint-bob    2.4s ease-in-out 3.8s infinite alternate;
+      transition: opacity 0.5s ease;
+      filter: drop-shadow(0 0 10px rgba(232, 180, 160, 0.25));
+    }
+    .hero-scroll-hint:hover { color: rgba(248, 220, 200, 0.9); }
+    .hero-scroll-hint .sh-arrow {
+      display: inline-block;
+      width: 1px;
+      height: 22px;
+      background: linear-gradient(to bottom,
+        rgba(232, 180, 160, 0) 0%,
+        rgba(232, 180, 160, 0.85) 100%);
+      position: relative;
+    }
+    .hero-scroll-hint .sh-arrow::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 7px;
+      height: 7px;
+      border-right: 1px solid rgba(232, 180, 160, 0.85);
+      border-bottom: 1px solid rgba(232, 180, 160, 0.85);
+      transform: translateX(-50%) translateY(2px) rotate(45deg);
+    }
+    /* Once the page has been scrolled, fade the hint out */
+    body.has-scrolled .hero-scroll-hint {
+      opacity: 0;
+      pointer-events: none;
+      animation: none;
+    }
+    @keyframes scroll-hint-appear {
+      from { opacity: 0; }
+      to   { opacity: 0.75; }
+    }
+    @keyframes scroll-hint-bob {
+      from { transform: translateX(-50%) translateY(0); }
+      to   { transform: translateX(-50%) translateY(7px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-scroll-hint {
+        animation: scroll-hint-appear 0.3s ease 0.3s forwards;
+      }
     }
 
     /* Cursor-following glow (desktop only) */
@@ -2361,11 +2441,9 @@
     /* Text container — solid warm color so it's always visible
        (no fragile background-clip:text trick) */
     .returns-text {
-      display: inline-flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: baseline;
-      gap: 0;
+      display: block;
+      text-align: center;
+      max-width: 100%;
       font-family: var(--font-display);
       font-style: italic;
       font-weight: 300;
@@ -2377,27 +2455,26 @@
         0 0 36px rgba(232, 180, 160, 0.25);
       position: relative;
       z-index: 2;
+      /* If a single word ever overruns the line (very narrow phones),
+         break it instead of overflowing the banner. */
+      overflow-wrap: break-word;
     }
 
-    /* Individual letters (only created during the animation pass) */
+    /* Individual letters (only created during the animation pass).
+       Inline-block so each letter sits in line with the next, but the
+       browser still wraps at the real space text-nodes between words. */
     .rl {
       display: inline-block;
       opacity: 0;
       transform: translateY(-22px) scale(0.3) rotate(var(--rot, 0deg));
       transition:
-        opacity  0.35s ease,
+        opacity   0.35s ease,
         transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
       transition-delay: calc(var(--i) * 52ms);
     }
     .returns-banner.animated .rl {
       opacity: 1;
       transform: translateY(0) scale(1) rotate(0deg);
-    }
-
-    /* Spaces */
-    .rl-sp {
-      display: inline-block;
-      width: 0.28em;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -2457,12 +2534,255 @@
     }
 
     /* ============================================================
+       COUNTDOWN OVERLAY — covers the entire page until 02 June 2026.
+       Bypass for previewing: append ?preview to the URL.
+       ============================================================ */
+    .countdown-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background:
+        radial-gradient(ellipse at 22% 18%, #3d1f5e 0%, transparent 55%),
+        radial-gradient(ellipse at 78% 82%, #5a2748 0%, transparent 52%),
+        radial-gradient(ellipse 120% 80% at 50% 50%, transparent 0%, rgba(0,0,0,0.45) 100%),
+        linear-gradient(180deg, #150826 0%, #1f0e34 50%, #150826 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(24px, 6vw, 64px) clamp(20px, 5vw, 40px);
+      overflow: hidden;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 1.2s ease, visibility 0s linear 1.2s;
+    }
+    .countdown-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* Drifting embers behind the countdown — quiet atmosphere */
+    .countdown-stars {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cd-ember {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(255, 240, 220, 0.9),
+        rgba(232, 180, 160, 0.4) 60%,
+        transparent 100%);
+      pointer-events: none;
+      animation: cd-ember-drift linear infinite;
+      will-change: transform, opacity;
+    }
+    @keyframes cd-ember-drift {
+      0%   { transform: translateY(110vh) translateX(0)     scale(0.8); opacity: 0; }
+      8%   { opacity: 0.8; }
+      90%  { opacity: 0.7; }
+      100% { transform: translateY(-12vh)  translateX(20px) scale(1);   opacity: 0; }
+    }
+
+    .countdown-inner {
+      position: relative;
+      z-index: 2;
+      max-width: 620px;
+      width: 100%;
+      text-align: center;
+      color: var(--c-text);
+    }
+    .countdown-overline {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(0.82rem, 2vw, 1.05rem);
+      letter-spacing: 0.16em;
+      color: rgba(232, 180, 160, 0.75);
+      margin: 0 0 clamp(8px, 1.6vw, 14px);
+    }
+    .countdown-name {
+      font-family: var(--font-script);
+      font-weight: 400;
+      font-size: clamp(3.4rem, 12vw, 6.2rem);
+      line-height: 1;
+      padding-bottom: 0.32em;
+      margin: 0;
+      background: linear-gradient(90deg,
+        #c89a8a 0%, #efc4b4 18%, #fbf2ed 35%,
+        #fffcfa 50%, #fbf2ed 65%, #f8c8d5 82%, #c89a8a 100%);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+              background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter:
+        drop-shadow(0 0 28px rgba(232, 180, 160, 0.55))
+        drop-shadow(0 4px 40px rgba(212, 197, 249, 0.24));
+      animation: cd-shimmer 6.5s ease-in-out infinite alternate;
+    }
+    @keyframes cd-shimmer {
+      from { background-position:   0% center; }
+      to   { background-position: 100% center; }
+    }
+
+    .countdown-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: clamp(18px, 3vw, 28px) auto clamp(20px, 4vw, 32px);
+      max-width: 280px;
+    }
+    .countdown-divider span:not(.cd-mark) {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(232, 180, 160, 0.5), transparent);
+    }
+    .countdown-divider .cd-mark {
+      font-size: 0.9rem;
+      color: rgba(232, 180, 160, 0.75);
+    }
+
+    .countdown-grid {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: clamp(14px, 4vw, 36px);
+      margin: clamp(10px, 2vw, 18px) 0 clamp(20px, 3.5vw, 32px);
+    }
+    .cd-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: clamp(54px, 14vw, 96px);
+    }
+    .cd-num {
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: clamp(2.6rem, 9vw, 4.4rem);
+      line-height: 1;
+      color: var(--c-warm-white);
+      text-shadow:
+        0 0 24px rgba(232, 180, 160, 0.45),
+        0 0 48px rgba(232, 180, 160, 0.2);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.01em;
+    }
+    .cd-label {
+      display: block;
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: clamp(0.65rem, 1.6vw, 0.82rem);
+      letter-spacing: 0.28em;
+      color: rgba(232, 180, 160, 0.62);
+      margin-top: 10px;
+    }
+
+    .countdown-date {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: clamp(0.95rem, 2.4vw, 1.2rem);
+      color: rgba(248, 200, 213, 0.78);
+      margin: 0 0 clamp(10px, 2vw, 14px);
+      letter-spacing: 0.04em;
+    }
+    .countdown-date em {
+      font-style: normal;
+      font-weight: 500;
+      color: rgba(255, 240, 220, 0.96);
+      letter-spacing: 0.14em;
+    }
+    .countdown-footer {
+      font-family: var(--font-script);
+      font-size: clamp(1.05rem, 2.8vw, 1.4rem);
+      color: rgba(232, 180, 160, 0.7);
+      margin: 0;
+      filter: drop-shadow(0 0 12px rgba(232, 180, 160, 0.35));
+    }
+    .countdown-footer .cd-heart {
+      color: #ffb6c1;
+      filter: drop-shadow(0 0 6px rgba(255, 150, 170, 0.75));
+      margin-left: 0.1em;
+    }
+
+    /* Body stops scrolling while the overlay is active */
+    body.countdown-active {
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    @media (max-width: 540px) {
+      .countdown-grid {
+        gap: 10px;
+      }
+      .cd-unit {
+        min-width: 56px;
+      }
+    }
+    @media (max-width: 360px) {
+      .countdown-grid {
+        gap: 6px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cd-ember { display: none; }
+      .countdown-name { animation: none; }
+    }
+
+    /* ============================================================
        FUTURE SECTIONS GO BELOW THIS LINE
        (Add new section styles in clearly labeled blocks.)
        ============================================================ */
   </style>
 </head>
 <body>
+
+  <!-- ============================================================
+       COUNTDOWN OVERLAY — gates the page until 02 June 2026 (midnight).
+       Add ?preview to the URL to bypass while testing.
+       ============================================================ -->
+  <div class="countdown-overlay" id="countdownOverlay">
+    <div class="countdown-stars" id="countdownStars" aria-hidden="true"></div>
+
+    <div class="countdown-inner">
+      <p class="countdown-overline">a little universe is being prepared for</p>
+      <h1 class="countdown-name">Aishie</h1>
+
+      <div class="countdown-divider" aria-hidden="true">
+        <span></span>
+        <span class="cd-mark">✦</span>
+        <span></span>
+      </div>
+
+      <div class="countdown-grid" aria-live="polite">
+        <div class="cd-unit">
+          <span class="cd-num" id="cdDays">--</span>
+          <span class="cd-label">days</span>
+        </div>
+        <div class="cd-unit">
+          <span class="cd-num" id="cdHours">--</span>
+          <span class="cd-label">hours</span>
+        </div>
+        <div class="cd-unit">
+          <span class="cd-num" id="cdMinutes">--</span>
+          <span class="cd-label">minutes</span>
+        </div>
+        <div class="cd-unit">
+          <span class="cd-num" id="cdSeconds">--</span>
+          <span class="cd-label">seconds</span>
+        </div>
+      </div>
+
+      <p class="countdown-date">until <em>02 · June · 2026</em></p>
+      <p class="countdown-footer">with all our love <span class="cd-heart">&hearts;</span></p>
+    </div>
+  </div>
 
   <!-- ============================================================
        SECTION 01 — HERO
@@ -2822,6 +3142,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Subtle scroll hint — also functional, since the cake's birthday
+         message reveals when the girl arrives on first scroll -->
+    <a href="#timeline" class="hero-scroll-hint" aria-label="Scroll down">
+      <span>scroll</span>
+      <span class="sh-arrow" aria-hidden="true"></span>
+    </a>
 
     <!-- Bottom colour-dissolve: merges hero into the section below -->
     <div class="hero-fade-out" aria-hidden="true"></div>
@@ -3481,10 +3808,137 @@
 
   <script>
     /* ============================================================
+       BIRTHDAY COUNTDOWN — runs first, before everything else.
+       Hides the overlay either when 02 June 2026 has arrived, or
+       immediately when the URL contains ?preview (for testing).
+       ============================================================ */
+    (function birthdayCountdown() {
+      const overlay = document.getElementById('countdownOverlay');
+      if (!overlay) return;
+
+      /* Target: midnight at the start of 02 June 2026, in the viewer's
+         local timezone. So Aishie experiences the unlock at her own
+         midnight no matter where she is. */
+      const TARGET = new Date(2026, 5, 2, 0, 0, 0).getTime();
+
+      const elDays    = document.getElementById('cdDays');
+      const elHours   = document.getElementById('cdHours');
+      const elMinutes = document.getElementById('cdMinutes');
+      const elSeconds = document.getElementById('cdSeconds');
+      const starsEl   = document.getElementById('countdownStars');
+
+      function hideOverlay(immediate) {
+        if (immediate) {
+          overlay.style.transition = 'none';
+          overlay.classList.add('hidden');
+          document.body.classList.remove('countdown-active');
+          /* Force reflow then restore transition so any future use works */
+          void overlay.offsetWidth;
+          overlay.style.transition = '';
+        } else {
+          overlay.classList.add('hidden');
+          /* Restore scroll AFTER the fade completes */
+          setTimeout(() => document.body.classList.remove('countdown-active'), 1250);
+        }
+      }
+
+      /* Preview bypass: ?preview in the URL skips the countdown */
+      const params = new URLSearchParams(location.search);
+      if (params.has('preview')) {
+        hideOverlay(true);
+        return;
+      }
+
+      /* If the target has already arrived, skip the overlay entirely */
+      if (Date.now() >= TARGET) {
+        hideOverlay(true);
+        return;
+      }
+
+      /* Otherwise, lock the page and start counting */
+      document.body.classList.add('countdown-active');
+
+      /* Sprinkle a handful of drifting embers in the background */
+      const EMBER_COUNT = window.innerWidth < 540 ? 14 : 22;
+      for (let i = 0; i < EMBER_COUNT; i++) {
+        const e = document.createElement('span');
+        e.className = 'cd-ember';
+        const dur   = 14 + Math.random() * 16;
+        const delay = -Math.random() * dur;
+        const size  = 2 + Math.random() * 3;
+        e.style.left           = (Math.random() * 100) + 'vw';
+        e.style.width          = size + 'px';
+        e.style.height         = size + 'px';
+        e.style.animationDuration = dur + 's';
+        e.style.animationDelay    = delay + 's';
+        starsEl.appendChild(e);
+      }
+
+      let revealed = false;
+      function tick() {
+        const diff = TARGET - Date.now();
+        if (diff <= 0) {
+          if (revealed) return;
+          revealed = true;
+          revealPage();
+          return;
+        }
+        const days    = Math.floor(diff / 86400000);
+        const hours   = Math.floor((diff % 86400000) / 3600000);
+        const minutes = Math.floor((diff % 3600000)  / 60000);
+        const seconds = Math.floor((diff % 60000)    / 1000);
+        elDays.textContent    = String(days).padStart(2, '0');
+        elHours.textContent   = String(hours).padStart(2, '0');
+        elMinutes.textContent = String(minutes).padStart(2, '0');
+        elSeconds.textContent = String(seconds).padStart(2, '0');
+      }
+
+      /* When the timer hits zero: small celebratory sparkle burst,
+         then fade the overlay away and unlock the page. */
+      function revealPage() {
+        const cx = window.innerWidth  / 2;
+        const cy = window.innerHeight / 2;
+        const N = 48;
+        for (let i = 0; i < N; i++) {
+          const s = document.createElement('span');
+          s.className = 'sparkle';
+          const angle = (Math.PI * 2 * i / N) + (Math.random() - 0.5) * 0.4;
+          const dist  = 100 + Math.random() * 240;
+          s.style.left = cx + 'px';
+          s.style.top  = cy + 'px';
+          s.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+          s.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+          const sc = 0.6 + Math.random() * 1.0;
+          s.style.width  = (6 * sc) + 'px';
+          s.style.height = (6 * sc) + 'px';
+          s.style.animationDelay = (Math.random() * 0.35).toFixed(2) + 's';
+          document.body.appendChild(s);
+          setTimeout(() => s.remove(), 1800);
+        }
+        setTimeout(() => hideOverlay(false), 450);
+      }
+
+      /* Initial render and every-second tick */
+      tick();
+      setInterval(tick, 1000);
+    })();
+
+    /* ============================================================
        SECTION 01 — HERO  (scripts)
        Each subsystem is wrapped in its own IIFE so future sections
        can be added without touching this code.
        ============================================================ */
+
+    /* --- Dismiss the hero scroll hint the moment the page is scrolled --- */
+    (function dismissScrollHint() {
+      function onScroll() {
+        if (window.scrollY > 40) {
+          document.body.classList.add('has-scrolled');
+          window.removeEventListener('scroll', onScroll);
+        }
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+    })();
 
     /* --- Floating stardust particles (canvas) --- */
     (function particleField() {
@@ -4284,15 +4738,14 @@
       }
 
       /* Clear the static text and rebuild it as animated letter spans.
-         This only runs once, the moment the banner enters view. */
+         This only runs once, the moment the banner enters view.
+         Spaces become real text nodes — they're the only legal wrap
+         points, so words always stay glued together. */
       function buildLetters() {
         textEl.textContent = '';
         [...text].forEach((ch, idx) => {
           if (ch === ' ') {
-            const sp = document.createElement('span');
-            sp.className = 'rl-sp';
-            sp.setAttribute('aria-hidden', 'true');
-            textEl.appendChild(sp);
+            textEl.appendChild(document.createTextNode(' '));
           } else {
             const s = document.createElement('span');
             s.className = 'rl';
